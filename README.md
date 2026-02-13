@@ -18,7 +18,8 @@ pip install requests
 ### API Key
 
 1. Get an API key from [OpenRouter](https://openrouter.ai/)
-2. Edit `config.json` and replace `YOUR_OPENROUTER_API_KEY_HERE` with your key
+2. Copy the example config: `cp config.example.json config.json`
+3. Edit `config.json` and replace `YOUR_OPENROUTER_API_KEY_HERE` with your key
 
 ```json
 {
@@ -94,7 +95,7 @@ Balanced actions:
 | `game.py` | Main game loop and CLI interface |
 | `game_state.py` | State management, persistence, win/lose checks |
 | `ai_personalities.py` | DeepSeek prompt templates for each country/narrator |
-| `config.json` | API configuration (add your key here) |
+| `config.example.json` | Example API config (copy to `config.json` and add your key) |
 
 ## Cost
 
