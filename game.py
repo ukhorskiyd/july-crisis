@@ -5,49 +5,44 @@ Player controls Austria-Hungary during the July Crisis (5 turns, July 23-28).
 AI plays Serbia, Russia, and Germany via DeepSeek V3 on OpenRouter.
 """
 
-import json
 import sys
 import time
-from pathlib import Path
 
 import requests
 
 import ai_personalities as ai
 import game_state as gs
 
-CONFIG_PATH = Path(__file__).parent / "config.json"
+API_URL = "https://openrouter.ai/api/v1/chat/completions"
+MODEL = "deepseek/deepseek-chat-v3"
+MAX_TOKENS = 512
+TEMPERATURE = 0.8
 
 # DeepSeek V3 pricing (per million tokens, via OpenRouter)
 COST_PER_M_INPUT = 0.5
 COST_PER_M_OUTPUT = 1.0
 
 
-def load_config() -> dict:
-    """Load API configuration."""
-    with open(CONFIG_PATH) as f:
-        return json.load(f)
-
-
-def call_ai(config: dict, system_prompt: str, user_prompt: str,
+def call_ai(api_key: str, system_prompt: str, user_prompt: str,
             state: dict) -> str:
     """Call DeepSeek V3 via OpenRouter and return the response text."""
     headers = {
-        "Authorization": f"Bearer {config['openrouter_api_key']}",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
     payload = {
-        "model": config["model"],
+        "model": MODEL,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
-        "max_tokens": config.get("max_tokens", 512),
-        "temperature": config.get("temperature", 0.8),
+        "max_tokens": MAX_TOKENS,
+        "temperature": TEMPERATURE,
     }
 
     try:
         resp = requests.post(
-            config["api_url"], headers=headers, json=payload, timeout=30
+            API_URL, headers=headers, json=payload, timeout=30
         )
         resp.raise_for_status()
         data = resp.json()
@@ -119,8 +114,10 @@ def get_player_action() -> str:
     return " ".join(lines)
 
 
-def play_turn(state: dict, config: dict, offline: bool) -> dict:
+def play_turn(state: dict, api_key: str | None) -> dict:
     """Execute one full turn of the game."""
+    offline = api_key is None
+
     # 1. Display status
     print(gs.format_full_status(state))
 
@@ -129,7 +126,7 @@ def play_turn(state: dict, config: dict, offline: bool) -> dict:
     if offline:
         sitrep = ai.EXAMPLE_RESPONSES["situation_report"]
     else:
-        sitrep = call_ai(config, sys_prompt, usr_prompt, state)
+        sitrep = call_ai(api_key, sys_prompt, usr_prompt, state)
         if sitrep is None:
             sitrep = ai.EXAMPLE_RESPONSES["situation_report"]
     print_section("SITUATION REPORT", sitrep)
@@ -153,7 +150,7 @@ def play_turn(state: dict, config: dict, offline: bool) -> dict:
     if offline:
         serbia_resp = ai.EXAMPLE_RESPONSES["serbia"]
     else:
-        serbia_resp = call_ai(config, sys_p, usr_p, state)
+        serbia_resp = call_ai(api_key, sys_p, usr_p, state)
         if serbia_resp is None:
             serbia_resp = ai.EXAMPLE_RESPONSES["serbia"]
     print_section("SERBIA (Nikola Pasic)", serbia_resp)
@@ -163,7 +160,7 @@ def play_turn(state: dict, config: dict, offline: bool) -> dict:
     if offline:
         russia_resp = ai.EXAMPLE_RESPONSES["russia"]
     else:
-        russia_resp = call_ai(config, sys_p, usr_p, state)
+        russia_resp = call_ai(api_key, sys_p, usr_p, state)
         if russia_resp is None:
             russia_resp = ai.EXAMPLE_RESPONSES["russia"]
     print_section("RUSSIA (Sergei Sazonov)", russia_resp)
@@ -173,7 +170,7 @@ def play_turn(state: dict, config: dict, offline: bool) -> dict:
     if offline:
         germany_resp = ai.EXAMPLE_RESPONSES["germany"]
     else:
-        germany_resp = call_ai(config, sys_p, usr_p, state)
+        germany_resp = call_ai(api_key, sys_p, usr_p, state)
         if germany_resp is None:
             germany_resp = ai.EXAMPLE_RESPONSES["germany"]
     print_section("GERMANY (Bethmann-Hollweg)", germany_resp)
@@ -183,7 +180,7 @@ def play_turn(state: dict, config: dict, offline: bool) -> dict:
     if offline:
         faction_resp = ai.EXAMPLE_RESPONSES["factions"]
     else:
-        faction_resp = call_ai(config, sys_p, usr_p, state)
+        faction_resp = call_ai(api_key, sys_p, usr_p, state)
         if faction_resp is None:
             faction_resp = ai.EXAMPLE_RESPONSES["factions"]
     print_section("INTERNAL FACTIONS", faction_resp)
@@ -216,14 +213,15 @@ def main() -> None:
     print_slow("  ╚══════════════════════════════════════════════════════════╝")
     print()
 
-    # Check for API key
-    config = load_config()
-    offline = False
-    if config["openrouter_api_key"] == "YOUR_OPENROUTER_API_KEY_HERE":
-        print("  WARNING: No API key configured in config.json.")
-        print("  Running in OFFLINE mode with example responses.")
-        print("  To play with AI, add your OpenRouter API key to config.json.\n")
-        offline = True
+    # Prompt for API key
+    print("  Enter your OpenRouter API key (or press Enter for offline mode):")
+    api_key_input = input("  > ").strip()
+    if api_key_input:
+        api_key = api_key_input
+        print("  API key set. AI responses powered by DeepSeek V3.\n")
+    else:
+        api_key = None
+        print("  Running in OFFLINE mode with example responses.\n")
 
     # Check for existing save
     existing = gs.load_game()
@@ -254,7 +252,7 @@ def main() -> None:
             gs.delete_save()
             break
 
-        state = play_turn(state, config, offline)
+        state = play_turn(state, api_key)
 
         # Check lose after turn
         loss = gs.check_lose_conditions(state)

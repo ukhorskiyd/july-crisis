@@ -17,21 +17,7 @@ pip install requests
 
 ### API Key
 
-1. Get an API key from [OpenRouter](https://openrouter.ai/)
-2. Copy the example config: `cp config.example.json config.json`
-3. Edit `config.json` and replace `YOUR_OPENROUTER_API_KEY_HERE` with your key
-
-```json
-{
-    "openrouter_api_key": "sk-or-v1-your-key-here",
-    "model": "deepseek/deepseek-chat-v3",
-    "api_url": "https://openrouter.ai/api/v1/chat/completions",
-    "max_tokens": 512,
-    "temperature": 0.8
-}
-```
-
-The game works without an API key in offline mode using example responses.
+Get an API key from [OpenRouter](https://openrouter.ai/). The game prompts for it at startup. Press Enter without a key to play in offline mode with example responses.
 
 ## Play
 
@@ -95,7 +81,7 @@ Balanced actions:
 | `game.py` | Main game loop and CLI interface |
 | `game_state.py` | State management, persistence, win/lose checks |
 | `ai_personalities.py` | DeepSeek prompt templates for each country/narrator |
-| `config.example.json` | Example API config (copy to `config.json` and add your key) |
+| `.gitignore` | Excludes save files and Python caches |
 
 ## Cost
 
